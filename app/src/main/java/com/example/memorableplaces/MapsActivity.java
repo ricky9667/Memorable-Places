@@ -11,6 +11,7 @@ import android.location.LocationListener;
 import android.location.LocationManager;
 import android.os.Build;
 import android.os.Bundle;
+import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.core.app.ActivityCompat;
@@ -40,7 +41,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
             LatLng userLocation = new LatLng(location.getLatitude(), location.getLongitude());
             mMap.clear();
             mMap.addMarker(new MarkerOptions().position(userLocation).title(title));
-            mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(userLocation, 12));
+            mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(userLocation, 10));
         }
     }
 
@@ -73,7 +74,8 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         mMap.setOnMapLongClickListener(this);
 
         Intent intent = getIntent();
-        if (intent.getIntExtra("placeNumber", 0) == 0) {
+        int placeIndex = intent.getIntExtra("placeNumber", 0);
+        if (placeIndex == 0) {
             // zoom in on user location
             locationManager = (LocationManager) this.getSystemService(Context.LOCATION_SERVICE);
             locationListener = new LocationListener() {
@@ -106,6 +108,11 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
             } else {
                 ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.ACCESS_FINE_LOCATION}, 1);
             }
+        } else {
+            Location savedLocation = new Location(LocationManager.GPS_PROVIDER);
+            savedLocation.setLatitude(MainActivity.locations.get(placeIndex).latitude);
+            savedLocation.setLongitude(MainActivity.locations.get(placeIndex).longitude);
+            centerMapOnLocation(savedLocation, MainActivity.places.get(placeIndex));
         }
     }
 
@@ -141,5 +148,11 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         }
 
         mMap.addMarker(new MarkerOptions().position(latLng).title(address));
+
+        MainActivity.places.add(address);
+        MainActivity.locations.add(latLng);
+        MainActivity.adapter.notifyDataSetChanged();
+
+        Toast.makeText(this, "Location Saved!", Toast.LENGTH_SHORT).show();
     }
 }
