@@ -4,6 +4,8 @@ import android.Manifest;
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
+import android.location.Address;
+import android.location.Geocoder;
 import android.location.Location;
 import android.location.LocationListener;
 import android.location.LocationManager;
@@ -22,7 +24,12 @@ import com.google.android.gms.maps.SupportMapFragment;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.MarkerOptions;
 
-public class MapsActivity extends FragmentActivity implements OnMapReadyCallback {
+import java.text.SimpleDateFormat;
+import java.util.Date;
+import java.util.List;
+import java.util.Locale;
+
+public class MapsActivity extends FragmentActivity implements OnMapReadyCallback, GoogleMap.OnMapLongClickListener {
 
     private GoogleMap mMap;
     LocationManager locationManager;
@@ -33,7 +40,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
             LatLng userLocation = new LatLng(location.getLatitude(), location.getLongitude());
             mMap.clear();
             mMap.addMarker(new MarkerOptions().position(userLocation).title(title));
-            mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(userLocation, 10));
+            mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(userLocation, 12));
         }
     }
 
@@ -62,6 +69,8 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     @Override
     public void onMapReady(GoogleMap googleMap) {
         mMap = googleMap;
+
+        mMap.setOnMapLongClickListener(this);
 
         Intent intent = getIntent();
         if (intent.getIntExtra("placeNumber", 0) == 0) {
@@ -98,5 +107,39 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                 ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.ACCESS_FINE_LOCATION}, 1);
             }
         }
+    }
+
+    @Override
+    public void onMapLongClick(LatLng latLng) {
+
+        String address = "";
+        Geocoder geocoder = new Geocoder(getApplicationContext(), Locale.getDefault());
+
+        try {
+            List<Address> addressList = geocoder.getFromLocation(latLng.latitude, latLng.longitude, 1);
+            if (addressList != null && addressList.size() > 0) {
+
+                String postalCode = addressList.get(0).getPostalCode();
+                String state = addressList.get(0).getLocality();
+                String city = addressList.get(0).getAdminArea();
+                String street = addressList.get(0).getThoroughfare();
+//                String country = addressList.get(0).getCountryName();
+
+                address += (postalCode == null ? "" : postalCode + " ");
+                address += (city == null ? "" : city + " ");
+                address += (state == null ? "" : state + " ");
+                address += (street == null ? "" : street + " ");
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+        // no address for clicked location
+        if (address.equals("")) {
+            SimpleDateFormat sdf = new SimpleDateFormat("HH:mm yyyy-MM-dd");
+            address += sdf.format(new Date());
+        }
+
+        mMap.addMarker(new MarkerOptions().position(latLng).title(address));
     }
 }
